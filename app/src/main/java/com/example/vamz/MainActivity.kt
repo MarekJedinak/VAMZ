@@ -74,7 +74,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.vamz.ui.theme.VAMZTheme
 import kotlinx.coroutines.launch
-
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,28 +120,40 @@ val farbaPozadia = Color(144, 238, 144)
 
 @Composable
 fun HornaListaMain(navController: NavController) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    val backgroundColor = Color.Transparent
+
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .background(backgroundColor)
             .padding(8.dp)
             .border(BorderStroke(2.dp, Color.Black))
     ) {
-        IconButton(onClick = { navController.popBackStack() }) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Späť")
+        IconButton(
+            onClick = {
+                Log.d("NavigationDebug", "Kliknutie na Späť")
+                navController.popBackStack()
+            }
+        ) {
+            Icon(
+                Icons.Filled.ArrowBack,
+                contentDescription = "Späť",
+                modifier = Modifier.size(if (isLandscape) 36.dp else 24.dp)
+            )
         }
         Text(
             text = "Chenyu Vale",
             color = Color.Black,
             fontSize = 25.sp,
+            fontWeight = if (isLandscape) FontWeight.Bold else FontWeight.Normal
         )
         IconButton(onClick = { /* TODO */ }) {
-            Icon(
-                Icons.Filled.AccountCircle,
-                contentDescription = "Profil",
-                modifier = Modifier.size(30.dp)
-            )
+
         }
     }
 }
@@ -148,10 +163,19 @@ fun StrednaCastMain() {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    val aspectRatio = if (isLandscape) {
+        1.5f * (1117f / 925f)
+    } else {
+        1117f / 925f
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .aspectRatio(1117f / 925f)
+            .aspectRatio(aspectRatio, matchHeightConstraintsFirst = isLandscape)
     ) {
         val state = rememberTransformableState { zoomChange, panChange, _ ->
             scale = (scale * zoomChange).coerceIn(1f, 5f)
@@ -186,85 +210,139 @@ fun StrednaCastMain() {
 
 @Composable
 fun PrvyNahlad(navController: NavController) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(farbaPozadia)
     ) {
         Spacer(modifier = Modifier.size(16.dp))
+
         HornaListaMain(navController)
-        StrednaCastMain()
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            StrednaCastMain()
+        }
     }
 }
 
 @Composable
 fun MenuNahlad(navController: NavController) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(farbaPozadia)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            IconButton(
-                onClick = {
-                    Log.d("NavigationDebug", "Kliknutie na Mapa")
-                    navController.navigate("mapa")
-                },
-                modifier = Modifier.size(64.dp)
+        if (isLandscape) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Filled.Place,
-                    contentDescription = "Mapa",
-                    modifier = Modifier.size(64.dp)
-                )
-            }
-            Text(text = "Mapa")
-            Spacer(modifier = Modifier.size(16.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(0.4f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "ORECH",
+                        fontSize = 60.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Cursive,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-            IconButton(
-                onClick = {
-                    Log.d("NavigationDebug", "Kliknutie na Vyhladaj")
-                    navController.navigate("vyhladaj") },
-                modifier = Modifier.size(64.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = "Vyhľadať",
-                    modifier = Modifier.size(64.dp)
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(0.6f)
+                        .fillMaxHeight()
+                        .padding(end = 16.dp)
+                ) {
+                    MenuButtons(navController)
+                }
             }
-            Text(text = "Vyhľadaj")
-            Spacer(modifier = Modifier.size(16.dp))
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                MenuButtons(navController)
+            }
 
-            IconButton(
-                onClick = {
-                    Log.d("NavigationDebug", "Kliknutie na Zoznam")
-                    navController.navigate("zoznam_materialov") },
-                modifier = Modifier.size(64.dp)
-            ) {
-                Icon(
-                    Icons.Filled.List,
-                    contentDescription = "Zoznam materiálov",
-                    modifier = Modifier.size(64.dp)
-                )
-            }
-            Text(text = "Zoznam materiálov")
+            Text(
+                "ORECH",
+                fontSize = 78.sp,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 64.dp),
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Cursive,
+            )
         }
+    }
+}
 
-        Text(
-            "ORECH",
-            fontSize = 78.sp,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 64.dp),
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Cursive,
+@Composable
+fun MenuButtons(navController: NavController) {
+    IconButton(
+        onClick = {
+            Log.d("NavigationDebug", "Kliknutie na Mapa")
+            navController.navigate("mapa")
+        },
+        modifier = Modifier.size(64.dp)
+    ) {
+        Icon(
+            Icons.Filled.Place,
+            contentDescription = "Mapa",
+            modifier = Modifier.size(64.dp)
         )
     }
+    Text(text = "Mapa")
+    Spacer(modifier = Modifier.size(16.dp))
+
+    IconButton(
+        onClick = {
+            Log.d("NavigationDebug", "Kliknutie na Vyhľadaj")
+            navController.navigate("vyhladaj")
+        },
+        modifier = Modifier.size(64.dp)
+    ) {
+        Icon(
+            Icons.Filled.Search,
+            contentDescription = "Vyhľadať",
+            modifier = Modifier.size(64.dp)
+        )
+    }
+    Text(text = "Vyhľadaj")
+    Spacer(modifier = Modifier.size(16.dp))
+
+    IconButton(
+        onClick = {
+            Log.d("NavigationDebug", "Kliknutie na Zoznam materiálov")
+            navController.navigate("zoznam_materialov")
+        },
+        modifier = Modifier.size(64.dp)
+    ) {
+        Icon(
+            Icons.Filled.List,
+            contentDescription = "Zoznam materiálov",
+            modifier = Modifier.size(64.dp)
+        )
+    }
+    Text(text = "Zoznam materiálov")
 }
 
 @Composable
