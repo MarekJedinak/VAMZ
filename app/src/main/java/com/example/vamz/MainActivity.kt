@@ -1,6 +1,8 @@
 package com.example.vamz
 
+import android.app.Application
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,17 +29,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,11 +56,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -61,6 +72,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.vamz.ui.theme.VAMZTheme
+import kotlinx.coroutines.launch
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +102,9 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { entry ->
                         VysledokHladania(navController = navController, entry.arguments?.getString("arg1"))
+                    }
+                    composable("zoznam_materialov") {
+                        ZoznamMaterialovNahlad(navController)
                     }
                 }
             }
@@ -219,16 +235,16 @@ fun MenuNahlad(navController: NavController) {
             Spacer(modifier = Modifier.size(16.dp))
 
             IconButton(
-                onClick = { /* TODO */ },
+                onClick = { navController.navigate("zoznam_materialov") },
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
                     Icons.Filled.List,
-                    contentDescription = "História",
+                    contentDescription = "Zoznam materiálov",
                     modifier = Modifier.size(64.dp)
                 )
             }
-            Text(text = "História")
+            Text(text = "Zoznam materiálov")
         }
 
         Text(
@@ -245,7 +261,11 @@ fun MenuNahlad(navController: NavController) {
 
 @Composable
 fun VyhladajNahlad(navController: NavController) {
-    val viewModel = viewModel<SearchViewModel>()
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val viewModel: SearchViewModel = viewModel(
+        factory = SearchViewModelFactory(application)
+    )
     val searchText by viewModel.searchText.collectAsState()
     val materialy by viewModel.materialy.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -319,8 +339,15 @@ fun VyhladajNahlad(navController: NavController) {
 
 @Composable
 fun VysledokHladania(navController: NavController, material: String?) {
-    val viewModel = viewModel<SearchViewModel>()
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val viewModel: SearchViewModel = viewModel(
+        factory = SearchViewModelFactory(application)
+    )
     val materialy by viewModel.materialy.collectAsState()
+    val checkedMaterials by viewModel.checkedMaterials.collectAsState()
+
+    val filteredMaterials = materialy.filter { it.nazovMaterialu == material }
 
     Column(
         modifier = Modifier
@@ -351,26 +378,183 @@ fun VysledokHladania(navController: NavController, material: String?) {
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         ) {
-            items(materialy.filter { it.nazovMaterialu == material }) { _material ->
-                Column(
+            items(filteredMaterials) { _material ->
+                val isChecked = checkedMaterials[Pair(_material.nazovMaterialu, _material.lokacia)] ?: false
+
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    Text(
-                        text = "Lokácia: ${_material.lokacia}",
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        .padding(vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
                     )
-                    Image(
-                        painter = painterResource(id = _material.imageRes),
-                        contentDescription = _material.nazovMaterialu,
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(1.5f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = { checked ->
+                                    viewModel.toggleMaterialChecked(_material, checked)
+                                }
+                            )
+
+                            Text(
+                                text = "Lokácia: ${_material.lokacia}",
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+
+                        Image(
+                            painter = painterResource(id = _material.imageRes),
+                            contentDescription = _material.nazovMaterialu,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1.5f)
+                                .padding(vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (filteredMaterials.isNotEmpty()) {
+            Button(
+                onClick = {
+                    viewModel.saveMaterialSelections()
+                    Toast.makeText(
+                        context,
+                        "Označené materiály boli uložené",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0, 128, 0)
+                )
+            ) {
+                Text(
+                    "Uložiť označené materiály",
+                    color = Color.White,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ZoznamMaterialovNahlad(navController: NavController) {
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val viewModel: SearchViewModel = viewModel(
+        factory = SearchViewModelFactory(application)
+    )
+    val trackedMaterials by viewModel.trackedMaterials.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.clearExpiredMaterials()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(farbaPozadia)
+            .padding(16.dp)
+    ) {
+        HornaListaMain(navController)
+
+        Text(
+            text = "Zoznam sledovaných materiálov",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
+
+        if (trackedMaterials.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Žiadne sledované materiály",
+                    fontSize = 18.sp,
+                    color = Color.Gray
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                items(trackedMaterials) { material ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (material.isAvailable()) Color.White else Color(0xFFFFEEEE)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = material.nazovMaterialu,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+
+                            Text(
+                                text = "Lokácia: ${material.lokacia}",
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+
+                            Text(
+                                text = if (material.isAvailable())
+                                    "Stav: Dostupné"
+                                else
+                                    "Respawn za: ${material.getFormattedRespawnTime()}",
+                                color = if (material.isAvailable()) Color(0, 128, 0) else Color.Red,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+
+                            Text(
+                                text = "Dostupné od: ${material.getFormattedDate()}",
+                                color = Color.Gray,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+
+                            Image(
+                                painter = painterResource(id = material.imageRes),
+                                contentDescription = material.nazovMaterialu,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1.5f)
+                                    .padding(vertical = 8.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
