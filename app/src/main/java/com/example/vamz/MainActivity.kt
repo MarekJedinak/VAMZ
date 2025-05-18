@@ -2,6 +2,7 @@ package com.example.vamz
 
 import android.app.Application
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -209,7 +210,10 @@ fun MenuNahlad(navController: NavController) {
             modifier = Modifier.fillMaxSize()
         ) {
             IconButton(
-                onClick = { navController.navigate("mapa") },
+                onClick = {
+                    Log.d("NavigationDebug", "Kliknutie na Mapa")
+                    navController.navigate("mapa")
+                },
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
@@ -222,7 +226,9 @@ fun MenuNahlad(navController: NavController) {
             Spacer(modifier = Modifier.size(16.dp))
 
             IconButton(
-                onClick = { navController.navigate("vyhladaj") },
+                onClick = {
+                    Log.d("NavigationDebug", "Kliknutie na Vyhladaj")
+                    navController.navigate("vyhladaj") },
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
@@ -235,7 +241,9 @@ fun MenuNahlad(navController: NavController) {
             Spacer(modifier = Modifier.size(16.dp))
 
             IconButton(
-                onClick = { navController.navigate("zoznam_materialov") },
+                onClick = {
+                    Log.d("NavigationDebug", "Kliknutie na Zoznam")
+                    navController.navigate("zoznam_materialov") },
                 modifier = Modifier.size(64.dp)
             ) {
                 Icon(
