@@ -13,7 +13,6 @@ ORECH je mobilná aplikácia navrhnutá pre fiktívnu open-world zónu "Chenyu V
 ## Technická Implementácia
 Aplikácia je postavená pomocou:
 - Kotlin s Jetpack Compose pre moderný vývoj používateľského rozhrania
-- MVVM architektúrny vzor s ViewModels pre separáciu business logiky
 - Navigation Compose pre typovo bezpečnú navigáciu medzi obrazovkami
 - SharedPreferences s JSON serializáciou pre perzistentné ukladanie dát
 - Reaktívne aktualizácie UI pomocou Kotlin Flow
